@@ -4,36 +4,137 @@
   <meta charset="utf-8">
   <title>Venta de fichas</title>
   <style>
-    body { font-family: sans-serif; max-width: 36rem; margin: 2rem auto; background: #fff; color: #111; }
-    label, button, select, input { color: #111; }
-    label { display: block; margin-top: 0.8rem; }
-    button { margin: 1rem 0.4rem 0 0; }
-    #message { min-height: 1.2rem; }
-    .box { background: #f3f3f3; padding: 0.8rem; margin-top: 1rem; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #fff4d6;
+      color: #1c1917;
+      font-family: "Segoe UI", sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: 0.85rem 2rem 0.7rem;
+      background: #14110f;
+    }
+    .lights {
+      height: 14px;
+      background:
+        radial-gradient(circle, #fff1a8 0 3px, #ffb000 4px 5px, transparent 6px) center / 22px 14px,
+        #3a1d0b;
+    }
+    .brand { color: #fff4d6; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    nav { display: flex; gap: 1.2rem; }
+    .tab {
+      padding: 0.35rem 0;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #cbbba4;
+      font: inherit;
+      cursor: pointer;
+    }
+    .tab.active { color: #fff4d6; border-bottom-color: #e8a317; font-weight: 700; }
+    main { padding: 2rem; }
+    h1 { margin: 0 0 1.2rem; color: #d3121a; font-size: 1.8rem; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(12rem, 22rem)); gap: 0.2rem 1.5rem; }
+    label { display: block; margin-top: 0.85rem; font-size: 0.85rem; color: #4a3424; }
+    input, select {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 0.3rem;
+      padding: 0.5rem 0.6rem;
+      color: #1c1917;
+      background: #fff;
+      border: 1px solid #e4c98a;
+      border-radius: 8px;
+      font: inherit;
+    }
+    .actions { display: flex; gap: 0.5rem; grid-column: 1 / -1; margin-top: 1.1rem; }
+    button.primary, button.ghost {
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button.primary { background: #d3121a; border: 1px solid #d3121a; color: #fff6df; }
+    button.ghost { background: transparent; border: 1px solid transparent; color: #7a5c45; }
+    #message { min-height: 1.2rem; margin: 0.8rem 0 0; color: #d3121a; }
+    .slip {
+      max-width: 28rem;
+      margin-top: 1.4rem;
+      padding: 0.2rem 0 0;
+      border-top: 1px solid #e0b45a;
+    }
+    .slip h2 { margin: 0 0 0.6rem; color: #d3121a; font-size: 0.95rem; }
+    dl { margin: 0; }
+    dl div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.25rem 0; }
+    dt { color: #7a5c45; }
+    dd { margin: 0; font-weight: 600; }
+    .soon { margin: 0.4rem 0 0; color: #4a3424; }
   </style>
 </head>
 <body>
-  <h1>Venta de fichas</h1>
-  <form id="sale">
-    <label>Usuario <input id="user" value="cashier" required></label>
-    <label>Cliente <select id="customer" required></select></label>
-    <label>Artículo <select id="item" required></select></label>
-    <label>Cantidad <input id="quantity" type="number" min="1" value="2" required></label>
-    <label>Método de pago
-      <select id="payment">
-        <option value="cash">Efectivo</option>
-        <option value="card">Tarjeta</option>
-      </select>
-    </label>
-    <button type="button" id="preview">Ver resumen</button>
-  </form>
-  <p id="message"></p>
-  <div id="summary" class="box" hidden>
-    <p id="summary-text"></p>
-    <button type="button" id="confirm">Confirmar</button>
-    <button type="button" id="clear">Cancelar</button>
-  </div>
-  <div id="receipt" class="box" hidden></div>
+  <header>
+    <span class="brand">Caja</span>
+    <nav>
+      <button type="button" class="tab active" data-panel="sale">Venta de fichas</button>
+      <button type="button" class="tab" data-panel="membership">Membresía</button>
+    </nav>
+  </header>
+  <div class="lights"></div>
+  <main>
+      <section id="sale">
+        <h1>Venta de fichas</h1>
+        <form id="sale-form" class="fields">
+          <label>Usuario <input id="user" value="cashier" required></label>
+          <label>Cliente <select id="customer" required></select></label>
+          <label>Artículo <select id="item" required></select></label>
+          <label>Cantidad <input id="quantity" type="number" min="1" value="2" required></label>
+          <label>Método de pago
+            <select id="payment">
+              <option value="cash">Efectivo</option>
+              <option value="card">Tarjeta</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button type="button" id="preview" class="primary">Ver resumen</button>
+          </div>
+        </form>
+        <p id="message"></p>
+        <div id="summary" class="slip" hidden>
+          <h2>Resumen</h2>
+          <dl>
+            <div><dt>Cliente</dt><dd id="q-customer"></dd></div>
+            <div><dt>Detalle</dt><dd id="q-detail"></dd></div>
+            <div><dt>Monto</dt><dd id="q-amount"></dd></div>
+            <div><dt>Pago</dt><dd id="q-method"></dd></div>
+            <div><dt>Usuario</dt><dd id="q-user"></dd></div>
+          </dl>
+          <div class="actions">
+            <button type="button" id="confirm" class="primary">Confirmar</button>
+            <button type="button" id="clear" class="ghost">Cancelar</button>
+          </div>
+        </div>
+        <div id="receipt" class="slip" hidden>
+          <h2>Comprobante <span id="r-number"></span></h2>
+          <dl>
+            <div><dt>Fecha</dt><dd id="r-date"></dd></div>
+            <div><dt>Cliente</dt><dd id="r-customer"></dd></div>
+            <div><dt>Detalle</dt><dd id="r-detail"></dd></div>
+            <div><dt>Monto</dt><dd id="r-amount"></dd></div>
+            <div><dt>Pago</dt><dd id="r-method"></dd></div>
+            <div><dt>Usuario</dt><dd id="r-user"></dd></div>
+          </dl>
+        </div>
+      </section>
+      <section id="membership" hidden>
+        <h1>Membresía</h1>
+        <p class="soon">Asignar una membresía y registrar su pago. Esta caja se integrará aquí.</p>
+      </section>
+  </main>
   <script>
     const methods = { cash: "efectivo", card: "tarjeta" };
     const errors = {
@@ -47,6 +148,16 @@
     const message = document.querySelector("#message");
     const summary = document.querySelector("#summary");
     const receipt = document.querySelector("#receipt");
+
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((item) => {
+          item.classList.toggle("active", item === tab);
+        });
+        document.querySelector("#sale").hidden = tab.dataset.panel !== "sale";
+        document.querySelector("#membership").hidden = tab.dataset.panel !== "membership";
+      });
+    });
 
     function payload() {
       return {
@@ -95,14 +206,20 @@
       }
     }
 
+    function text(id, value) {
+      document.querySelector(id).textContent = value;
+    }
+
     document.querySelector("#preview").addEventListener("click", async () => {
       receipt.hidden = true;
       try {
         const quoted = await post("/chip-sales/preview");
         summary.hidden = false;
-        document.querySelector("#summary-text").textContent =
-          `${quoted.customer_name}, ${quoted.quantity} ${quoted.item_name}, ` +
-          `monto ${quoted.amount}, ${methods[quoted.payment_method]}, ${quoted.user}`;
+        text("#q-customer", quoted.customer_name);
+        text("#q-detail", `${quoted.quantity} ${quoted.item_name}`);
+        text("#q-amount", quoted.amount);
+        text("#q-method", methods[quoted.payment_method]);
+        text("#q-user", quoted.user);
         message.textContent = "";
       } catch (error) {
         summary.hidden = true;
@@ -120,9 +237,13 @@
         const sold = await post("/chip-sales");
         summary.hidden = true;
         receipt.hidden = false;
-        receipt.textContent =
-          `Comprobante ${sold.number}, ${sold.sold_on}, ${sold.customer_name}, ` +
-          `${sold.detail}, monto ${sold.amount}, ${methods[sold.payment_method]}, ${sold.user}`;
+        text("#r-number", sold.number);
+        text("#r-date", sold.sold_on);
+        text("#r-customer", sold.customer_name);
+        text("#r-detail", sold.detail);
+        text("#r-amount", sold.amount);
+        text("#r-method", methods[sold.payment_method]);
+        text("#r-user", sold.user);
         message.textContent = "";
         await loadCatalog();
       } catch (error) {
