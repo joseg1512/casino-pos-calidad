@@ -24,9 +24,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: pyproject.toml
+          cache-dependency-path: requirements.txt
 
-      - run: python -m pip install -e ".[dev]"
+      - run: python -m pip install --only-binary :all: -r requirements.txt
 
       - run: ruff check src tests
 
@@ -40,9 +40,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: pyproject.toml
+          cache-dependency-path: requirements.txt
 
-      - run: python -m pip install -e ".[dev]"
+      - run: python -m pip install --only-binary :all: -r requirements.txt
 
       - run: pylint src
 
@@ -56,9 +56,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: pyproject.toml
+          cache-dependency-path: requirements.txt
 
-      - run: python -m pip install -e ".[dev]"
+      - run: python -m pip install --only-binary :all: -r requirements.txt
 
       - run: pytest
 
@@ -83,7 +83,7 @@ jobs:
           name: coverage
           path: .
 
-      - uses: SonarSource/sonarqube-scan-action@v8.5.1
+      - uses: SonarSource/sonarqube-scan-action@70bad232163b09d998ea0707ee80c0ec80798c16 # v8.5.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
