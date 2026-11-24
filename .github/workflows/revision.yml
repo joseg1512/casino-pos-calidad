@@ -26,7 +26,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
-      - run: python -m pip install --only-binary :all: -r requirements.txt
+      - run: "python -m pip install --only-binary :all: -r requirements.txt"
 
       - run: ruff check src tests
 
@@ -42,7 +42,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
-      - run: python -m pip install --only-binary :all: -r requirements.txt
+      - run: "python -m pip install --only-binary :all: -r requirements.txt"
 
       - run: pylint src
 
@@ -58,7 +58,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
-      - run: python -m pip install --only-binary :all: -r requirements.txt
+      - run: "python -m pip install --only-binary :all: -r requirements.txt"
 
       - run: pytest
 
