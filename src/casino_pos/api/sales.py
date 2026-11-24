@@ -6,6 +6,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from casino_pos.api.memberships import membership_routes
+from casino_pos.data.memberships import seed_membership_types
 from casino_pos.data.sales import (
     SaleOrder,
     confirm_sale,
@@ -73,10 +75,12 @@ def create_app(connection: sqlite3.Connection | None = None) -> FastAPI:
 
         return _call(run)
 
+    application.include_router(membership_routes(db))
     return application
 
 
 def demo_app() -> FastAPI:
     connection = connect()
     seed_demo(connection)
+    seed_membership_types(connection)
     return create_app(connection)
