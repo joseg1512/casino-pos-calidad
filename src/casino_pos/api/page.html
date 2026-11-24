@@ -61,7 +61,7 @@
     }
     button.primary { background: #d3121a; border: 1px solid #d3121a; color: #fff6df; }
     button.ghost { background: transparent; border: 1px solid transparent; color: #7a5c45; }
-    #message { min-height: 1.2rem; margin: 0.8rem 0 0; color: #d3121a; }
+    #message, #m-message { min-height: 1.2rem; margin: 0.8rem 0 0; color: #d3121a; }
     .slip {
       max-width: 28rem;
       margin-top: 1.4rem;
@@ -73,7 +73,6 @@
     dl div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.25rem 0; }
     dt { color: #7a5c45; }
     dd { margin: 0; font-weight: 600; }
-    .soon { margin: 0.4rem 0 0; color: #4a3424; }
   </style>
 </head>
 <body>
@@ -132,7 +131,49 @@
       </section>
       <section id="membership" hidden>
         <h1>Membresía</h1>
-        <p class="soon">Asignar una membresía y registrar su pago. Esta caja se integrará aquí.</p>
+        <form id="membership-form" class="fields">
+          <label>Usuario <input id="m-user" value="cashier" required></label>
+          <label>Cliente <select id="m-customer" required></select></label>
+          <label>Tipo de membresía <select id="m-type" required></select></label>
+          <label>Método de pago
+            <select id="m-payment">
+              <option value="cash">Efectivo</option>
+              <option value="card">Tarjeta</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button type="button" id="m-preview" class="primary">Ver resumen</button>
+          </div>
+        </form>
+        <p id="m-message"></p>
+        <div id="m-summary" class="slip" hidden>
+          <h2>Resumen</h2>
+          <dl>
+            <div><dt>Cliente</dt><dd id="mq-customer"></dd></div>
+            <div><dt>Tipo</dt><dd id="mq-type"></dd></div>
+            <div><dt>Inicio</dt><dd id="mq-start"></dd></div>
+            <div><dt>Vencimiento</dt><dd id="mq-expiry"></dd></div>
+            <div><dt>Monto</dt><dd id="mq-amount"></dd></div>
+            <div><dt>Pago</dt><dd id="mq-method"></dd></div>
+            <div><dt>Usuario</dt><dd id="mq-user"></dd></div>
+          </dl>
+          <div class="actions">
+            <button type="button" id="m-confirm" class="primary">Confirmar</button>
+            <button type="button" id="m-clear" class="ghost">Cancelar</button>
+          </div>
+        </div>
+        <div id="m-receipt" class="slip" hidden>
+          <h2>Comprobante <span id="mr-number"></span></h2>
+          <dl>
+            <div><dt>Fecha</dt><dd id="mr-date"></dd></div>
+            <div><dt>Cliente</dt><dd id="mr-customer"></dd></div>
+            <div><dt>Tipo</dt><dd id="mr-type"></dd></div>
+            <div><dt>Vigencia</dt><dd id="mr-period"></dd></div>
+            <div><dt>Monto</dt><dd id="mr-amount"></dd></div>
+            <div><dt>Pago</dt><dd id="mr-method"></dd></div>
+            <div><dt>Usuario</dt><dd id="mr-user"></dd></div>
+          </dl>
+        </div>
       </section>
   </main>
   <script>
@@ -143,7 +184,12 @@
       "customer was not found": "El cliente no existe.",
       "item is not sellable": "El artículo no se puede vender.",
       "item was not found": "El artículo no existe.",
-      "payment method must be cash or card": "El método de pago debe ser efectivo o tarjeta."
+      "payment method must be cash or card": "El método de pago debe ser efectivo o tarjeta.",
+      "membership type is not active": "El tipo de membresía no está activo.",
+      "membership type was not found": "El tipo de membresía no existe.",
+      "membership cost cannot be negative": "El costo del tipo no puede ser negativo.",
+      "duration must be a whole number of days above zero": "La duración del tipo no es válida.",
+      "user is required": "Indique el usuario."
     };
     const message = document.querySelector("#message");
     const summary = document.querySelector("#summary");
@@ -169,11 +215,11 @@
       };
     }
 
-    async function post(path) {
+    async function post(path, data = payload()) {
       const response = await fetch(path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload())
+        body: JSON.stringify(data)
       });
       const body = await response.json();
       if (!response.ok) {
@@ -189,19 +235,24 @@
       return `${row.name}${note}${sale}${units}`;
     }
 
+    function typeLabel(row) {
+      const note = row.active ? "" : " (inactivo)";
+      return `${row.name}${note}, costo ${row.cost}, ${row.duration_days} días`;
+    }
+
     async function loadCatalog() {
       const catalog = await fetch("/chip-sales/catalog").then((response) => response.json());
       fill("customer", catalog.customers, false);
       fill("item", catalog.items, true);
     }
 
-    function fill(id, rows, stock) {
+    function fill(id, rows, stock, label = (row) => optionLabel(row, stock)) {
       const select = document.querySelector("#" + id);
       select.innerHTML = "";
       for (const row of rows) {
         const option = document.createElement("option");
         option.value = row.id;
-        option.textContent = optionLabel(row, stock);
+        option.textContent = label(row);
         select.append(option);
       }
     }
@@ -251,7 +302,70 @@
       }
     });
 
+    const mMessage = document.querySelector("#m-message");
+    const mSummary = document.querySelector("#m-summary");
+    const mReceipt = document.querySelector("#m-receipt");
+
+    function membershipPayload() {
+      return {
+        customer_id: Number(document.querySelector("#m-customer").value),
+        type_id: Number(document.querySelector("#m-type").value),
+        payment_method: document.querySelector("#m-payment").value,
+        user: document.querySelector("#m-user").value
+      };
+    }
+
+    async function loadMembershipCatalog() {
+      const catalog = await fetch("/memberships/catalog").then((response) => response.json());
+      fill("m-customer", catalog.customers, false);
+      fill("m-type", catalog.types, false, typeLabel);
+    }
+
+    document.querySelector("#m-preview").addEventListener("click", async () => {
+      mReceipt.hidden = true;
+      try {
+        const quoted = await post("/memberships/preview", membershipPayload());
+        mSummary.hidden = false;
+        text("#mq-customer", quoted.customer_name);
+        text("#mq-type", quoted.type_name);
+        text("#mq-start", quoted.starts_on);
+        text("#mq-expiry", quoted.expires_on);
+        text("#mq-amount", quoted.amount);
+        text("#mq-method", methods[quoted.payment_method]);
+        text("#mq-user", quoted.user);
+        mMessage.textContent = "";
+      } catch (error) {
+        mSummary.hidden = true;
+        mMessage.textContent = error.message;
+      }
+    });
+
+    document.querySelector("#m-clear").addEventListener("click", () => {
+      mSummary.hidden = true;
+      mMessage.textContent = "La membresía no se registró.";
+    });
+
+    document.querySelector("#m-confirm").addEventListener("click", async () => {
+      try {
+        const assigned = await post("/memberships", membershipPayload());
+        mSummary.hidden = true;
+        mReceipt.hidden = false;
+        text("#mr-number", assigned.number);
+        text("#mr-date", assigned.issued_on);
+        text("#mr-customer", assigned.customer_name);
+        text("#mr-type", assigned.type_name);
+        text("#mr-period", `${assigned.starts_on} a ${assigned.expires_on}`);
+        text("#mr-amount", assigned.amount);
+        text("#mr-method", methods[assigned.payment_method]);
+        text("#mr-user", assigned.user);
+        mMessage.textContent = "";
+      } catch (error) {
+        mMessage.textContent = error.message;
+      }
+    });
+
     loadCatalog();
+    loadMembershipCatalog();
   </script>
 </body>
 </html>
