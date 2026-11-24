@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Venta de fichas</title>
+  <style>
+    body { font-family: sans-serif; max-width: 36rem; margin: 2rem auto; background: #fff; color: #111; }
+    label, button, select, input { color: #111; }
+    label { display: block; margin-top: 0.8rem; }
+    button { margin: 1rem 0.4rem 0 0; }
+    #message { min-height: 1.2rem; }
+    .box { background: #f3f3f3; padding: 0.8rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Venta de fichas</h1>
+  <form id="sale">
+    <label>Usuario <input id="user" value="cashier" required></label>
+    <label>Cliente <select id="customer" required></select></label>
+    <label>Artículo <select id="item" required></select></label>
+    <label>Cantidad <input id="quantity" type="number" min="1" value="2" required></label>
+    <label>Método de pago
+      <select id="payment">
+        <option value="cash">Efectivo</option>
+        <option value="card">Tarjeta</option>
+      </select>
+    </label>
+    <button type="button" id="preview">Ver resumen</button>
+  </form>
+  <p id="message"></p>
+  <div id="summary" class="box" hidden>
+    <p id="summary-text"></p>
+    <button type="button" id="confirm">Confirmar</button>
+    <button type="button" id="clear">Cancelar</button>
+  </div>
+  <div id="receipt" class="box" hidden></div>
+  <script>
+    const methods = { cash: "efectivo", card: "tarjeta" };
+    const errors = {
+      "quantity must be from 1 up to the stock": "La cantidad debe estar entre 1 y la existencia.",
+      "customer is not active": "El cliente no está activo.",
+      "customer was not found": "El cliente no existe.",
+      "item is not sellable": "El artículo no se puede vender.",
+      "item was not found": "El artículo no existe.",
+      "payment method must be cash or card": "El método de pago debe ser efectivo o tarjeta."
+    };
+    const message = document.querySelector("#message");
+    const summary = document.querySelector("#summary");
+    const receipt = document.querySelector("#receipt");
+
+    function payload() {
+      return {
+        customer_id: Number(document.querySelector("#customer").value),
+        item_id: Number(document.querySelector("#item").value),
+        quantity: Number(document.querySelector("#quantity").value),
+        payment_method: document.querySelector("#payment").value,
+        user: document.querySelector("#user").value
+      };
+    }
+
+    async function post(path) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload())
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(errors[body.detail] || body.detail);
+      }
+      return body;
+    }
+
+    function optionLabel(row, stock) {
+      const note = row.active ? "" : " (inactivo)";
+      const sale = stock && !row.sellable ? " (no vendible)" : "";
+      const units = stock ? `, existencia ${row.stock}, valor ${row.unit_value}` : "";
+      return `${row.name}${note}${sale}${units}`;
+    }
+
+    async function loadCatalog() {
+      const catalog = await fetch("/chip-sales/catalog").then((response) => response.json());
+      fill("customer", catalog.customers, false);
+      fill("item", catalog.items, true);
+    }
+
+    function fill(id, rows, stock) {
+      const select = document.querySelector("#" + id);
+      select.innerHTML = "";
+      for (const row of rows) {
+        const option = document.createElement("option");
+        option.value = row.id;
+        option.textContent = optionLabel(row, stock);
+        select.append(option);
+      }
+    }
+
+    document.querySelector("#preview").addEventListener("click", async () => {
+      receipt.hidden = true;
+      try {
+        const quoted = await post("/chip-sales/preview");
+        summary.hidden = false;
+        document.querySelector("#summary-text").textContent =
+          `${quoted.customer_name}, ${quoted.quantity} ${quoted.item_name}, ` +
+          `monto ${quoted.amount}, ${methods[quoted.payment_method]}, ${quoted.user}`;
+        message.textContent = "";
+      } catch (error) {
+        summary.hidden = true;
+        message.textContent = error.message;
+      }
+    });
+
+    document.querySelector("#clear").addEventListener("click", () => {
+      summary.hidden = true;
+      message.textContent = "La venta no se registró.";
+    });
+
+    document.querySelector("#confirm").addEventListener("click", async () => {
+      try {
+        const sold = await post("/chip-sales");
+        summary.hidden = true;
+        receipt.hidden = false;
+        receipt.textContent =
+          `Comprobante ${sold.number}, ${sold.sold_on}, ${sold.customer_name}, ` +
+          `${sold.detail}, monto ${sold.amount}, ${methods[sold.payment_method]}, ${sold.user}`;
+        message.textContent = "";
+        await loadCatalog();
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    });
+
+    loadCatalog();
+  </script>
+</body>
+</html>

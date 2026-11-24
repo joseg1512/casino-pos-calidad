@@ -39,6 +39,33 @@ class SaleOrder:
     user: str
 
 
+def seed_demo(connection) -> None:
+    connection.execute("INSERT INTO customers (id, name, active) VALUES (1, 'Ana', 1)")
+    connection.execute("INSERT INTO customers (id, name, active) VALUES (2, 'Luis', 0)")
+    connection.execute(
+        "INSERT INTO items (id, name, stock, unit_value, active, sellable) "
+        "VALUES (1, 'Chip', 10, 5, 1, 1)"
+    )
+    connection.execute(
+        "INSERT INTO items (id, name, stock, unit_value, active, sellable) "
+        "VALUES (2, 'Dice', 4, 2, 1, 0)"
+    )
+    connection.commit()
+
+
+def list_catalog(connection) -> dict:
+    customers = connection.execute(
+        "SELECT id, name, active FROM customers ORDER BY id"
+    ).fetchall()
+    items = connection.execute(
+        "SELECT id, name, stock, unit_value, active, sellable FROM items ORDER BY id"
+    ).fetchall()
+    return {
+        "customers": [dict(row) for row in customers],
+        "items": [dict(row) for row in items],
+    }
+
+
 def connect() -> sqlite3.Connection:
     # shortcut: one in-memory connection, shared with the request thread
     connection = sqlite3.connect(":memory:", check_same_thread=False)

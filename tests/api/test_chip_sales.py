@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from casino_pos.api.sales import create_app
+from casino_pos.api.sales import create_app, demo_app
 from casino_pos.data.sales import connect
 
 SALE = {
@@ -57,6 +57,16 @@ def test_confirm_rejects_a_quantity_above_stock():
     stock = connection.execute("SELECT stock FROM items WHERE id = 1").fetchone()["stock"]
     assert stock == 10
     connection.close()
+
+
+def test_page_lists_the_demo_catalog():
+    client = TestClient(demo_app())
+    page = client.get("/")
+    assert page.status_code == 200
+    assert "Venta de fichas" in page.text
+    catalog = client.get("/chip-sales/catalog").json()
+    assert catalog["customers"][0]["name"] == "Ana"
+    assert catalog["items"][0]["stock"] == 10
 
 
 def test_default_database_has_no_customers():
