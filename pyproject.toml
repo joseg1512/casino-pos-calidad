@@ -1,7 +1,7 @@
 [project]
 name = "casino-pos"
 version = "0.1.0"
-description = "Punto de venta del casino"
+description = "Casino point of sale"
 requires-python = ">=3.12"
 dependencies = []
 
