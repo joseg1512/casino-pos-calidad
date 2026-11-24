@@ -2,6 +2,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import date
 
+from casino_pos.data.memberships import MEMBERSHIP_SCHEMA
 from casino_pos.domain.transactions.sale import SaleError, SaleQuote, SaleRequest, confirm, quote
 
 SCHEMA = """
@@ -70,7 +71,7 @@ def connect() -> sqlite3.Connection:
     # shortcut: one in-memory connection, shared with the request thread
     connection = sqlite3.connect(":memory:", check_same_thread=False)
     connection.row_factory = sqlite3.Row
-    connection.executescript(SCHEMA)
+    connection.executescript(SCHEMA + MEMBERSHIP_SCHEMA)
     return connection
 
 
