@@ -40,8 +40,8 @@ class SaleOrder:
 
 
 def connect() -> sqlite3.Connection:
-    # shortcut: memory only, use a file when a sale must survive a restart
-    connection = sqlite3.connect(":memory:")
+    # shortcut: one in-memory connection, shared with the request thread
+    connection = sqlite3.connect(":memory:", check_same_thread=False)
     connection.row_factory = sqlite3.Row
     connection.executescript(SCHEMA)
     return connection
